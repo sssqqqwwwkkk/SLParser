@@ -1,4 +1,5 @@
 # SLParser - StudentLibrary PDF Exporter 
+[Русский](README_RUS.md)
 
 ## Parses a textbook from StudentLibrary for subsequent conversion to PDF
 
