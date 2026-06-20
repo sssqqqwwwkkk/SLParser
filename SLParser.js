@@ -257,7 +257,44 @@ tocList.appendChild(tocItem);
         });
         document.body.style.overflow = 'hidden';
 
-function downloadStandaloneHtml() {
+async function downloadStandaloneHtml() {
+    const images = Array.from(contentBox.querySelectorAll('img'));
+
+    if (images.length > 0) {
+        updateProgress(`🖼️ Встраиваем изображения (0/${images.length})...`);
+        let converted = 0;
+
+        for (const img of images) {
+            try {
+                const src = img.getAttribute('src');
+                // Пропускаем уже встроенные и пустые
+                if (!src || src.startsWith('data:')) continue;
+
+                const response = await fetch(src, {
+                    credentials: 'include',   // передаём куки сессии
+                    headers: { 'Authorization': `Bearer ${reader_access_token}` }
+                });
+
+                if (!response.ok) continue;
+
+                const blob = await response.blob();
+                const dataUrl = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.onerror   = reject;
+                    reader.readAsDataURL(blob);
+                });
+
+                img.src = dataUrl;          // заменяем URL на base64
+                converted++;
+                updateProgress(`🖼️ Встраиваем изображения (${converted}/${images.length})...`);
+            } catch (e) {
+                console.warn('Не удалось встроить изображение:', img.getAttribute('src'), e);
+            }
+        }
+    }
+
+    // Дальше всё как раньше — contentBox.innerHTML уже содержит base64
     const html = `<!doctype html>
 <html>
 <head>
@@ -269,7 +306,7 @@ p { text-indent: 1.2cm; text-align: left; white-space: normal; hyphens: none; }
 a { color: black; text-decoration: none; }
 .toc-item { display: block; margin-bottom: 6px; }
 .page-break-before { page-break-before: always; break-before: page; }
-.page-break-after { page-break-after: always; break-after: page; }
+.page-break-after  { page-break-after:  always; break-after:  page; }
 img { max-width: 100%; height: auto; display: block; margin: 0 auto; }
 @page { margin: 2cm; size: A4 portrait; }
 </style>
@@ -285,7 +322,7 @@ img { max-width: 100%; height: auto; display: block; margin: 0 auto; }
     setTimeout(() => URL.revokeObjectURL(link.href), 5000);
 }
 
-downloadStandaloneHtml();
+await downloadStandaloneHtml();   // <-- await вместо обычного вызова
 
         setTimeout(() => { document.getElementById('parser-progress').style.display = 'none'; }, 4000);
         console.log("🎉 Готово! Жми Ctrl+P и сохраняй в PDF.");
