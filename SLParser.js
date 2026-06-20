@@ -169,17 +169,11 @@
             const chapterAnchor = `chap-${i}`;
 
             // Ссылка в оглавление
-            const tocItem = document.createElement('span');
-            tocItem.className = 'toc-item';
-            tocItem.style.cssText = 'color: #0984e3; font-weight: bold; cursor: pointer; display: block; margin-bottom: 8px; padding-top: 8px; border-top: 1px dotted #eee;';
-            tocItem.innerText = chapterTitleText;
-            tocItem.onclick = () => {
-                const targetHeader = document.getElementById(chapterAnchor);
-                if(targetHeader) {
-                    targetHeader.scrollIntoView({behavior: "smooth", block: "start"});
-                }
-            };
-            tocList.appendChild(tocItem);
+            const tocItem = document.createElement('a');
+tocItem.href = `#${chapterAnchor}`;
+tocItem.className = 'toc-item';
+tocItem.textContent = chapterTitleText;
+tocList.appendChild(tocItem);
 
             const subHeadersMap = {};
             if (tabsConfResponse.toc && tabsConfResponse.toc.body) {
@@ -262,6 +256,36 @@
             }
         });
         document.body.style.overflow = 'hidden';
+
+function downloadStandaloneHtml() {
+    const html = `<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>${document.title || 'StudentLibrary Export'}</title>
+<style>
+body { font-family: Georgia, serif; font-size: 12pt; line-height: 1.5; color: black; }
+p { text-indent: 1.2cm; text-align: left; white-space: normal; hyphens: none; }
+a { color: black; text-decoration: none; }
+.toc-item { display: block; margin-bottom: 6px; }
+.page-break-before { page-break-before: always; break-before: page; }
+.page-break-after { page-break-after: always; break-after: page; }
+img { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+@page { margin: 2cm; size: A4 portrait; }
+</style>
+</head>
+<body>${contentBox.innerHTML}</body>
+</html>`;
+
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'studentlibrary-book.html';
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(link.href), 5000);
+}
+
+downloadStandaloneHtml();
 
         setTimeout(() => { document.getElementById('parser-progress').style.display = 'none'; }, 4000);
         console.log("🎉 Готово! Жми Ctrl+P и сохраняй в PDF.");
