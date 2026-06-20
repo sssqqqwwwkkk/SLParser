@@ -1,4 +1,4 @@
-# SLParder - StudentLibrary Book Parser 📚
+# SLParser - StudentLibrary Book Parser 📚
 [Русский](README_RUS.md)
 
 A browser console script that exports a book from StudentLibrary — to which
