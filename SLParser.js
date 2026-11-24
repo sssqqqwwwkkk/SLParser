@@ -60,6 +60,21 @@
         console.log(text);
     }
 
+    // Чистит HTML-мусор в заголовках: <p>...</p>, <span>, <i>, &nbsp; и прочие сущности.
+    // Логику парсинга не трогает — используется только для текстовых заголовков из API.
+    function cleanText(raw) {
+        if (!raw) return '';
+        const tmp = document.createElement('div');
+        tmp.innerHTML = String(raw);
+        let text = tmp.textContent || '';
+        text = text.replace(/&nbsp;/gi, ' ')           // сущность, оставшаяся как текст (&amp;nbsp;)
+                    .replace(/&[a-z#0-9]+;/gi, ' ')   // прочие html-сущности (&amp;ndash; и т.п.)
+                    .replace(/\u00A0/g, ' ')           // реальный неразрывный пробел -> обычный
+                    .replace(/\s+/g, ' ')              // схлопываем двойные пробелы
+                    .trim();
+        return text;
+    }
+
     try {
         updateProgress("🔄 Запрашиваем информацию о книге...");
         
@@ -80,11 +95,11 @@
             titlePage.className = 'page-break-after'; 
             titlePage.style.cssText = 'display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 80vh; text-align: center; padding: 40px 20px;';
 
-            const authors = getTagInfo('authors');
-            const title = getTagInfo('title') || bookResponse.title;
-            const publisher = getTagInfo('publisher');
-            const year = getTagInfo('year');
-            const isbn = getTagInfo('isbn');
+            const authors = cleanText(getTagInfo('authors'));
+            const title = cleanText(getTagInfo('title')) || bookResponse.title;
+            const publisher = cleanText(getTagInfo('publisher'));
+            const year = cleanText(getTagInfo('year'));
+            const isbn = cleanText(getTagInfo('isbn'));
             const bibliograpy = getTagInfo('bibliography');
             const annotation = getTagInfo('annotation');
 
@@ -165,7 +180,7 @@
 
             const tabs = tabsConfResponse.tabs || [];
             
-            const chapterTitleText = tabsConfResponse.title || `Глава ${i + 1}`;
+            const chapterTitleText = cleanText(tabsConfResponse.title) || `Глава ${i + 1}`;
             const chapterAnchor = `chap-${i}`;
 
             // Ссылка в оглавление
@@ -199,7 +214,7 @@ tocList.appendChild(tocItem);
                         // Подзаголовки выводим тегами <h3>
                         const subHeadEl = document.createElement('h3');
                         subHeadEl.style.cssText = 'margin-top: 35px; margin-bottom: 15px; font-size: 20px; font-weight: bold; color: #333;';
-                        subHeadEl.innerText = subHead.text;
+                        subHeadEl.innerText = cleanText(subHead.text);
                         contentBox.appendChild(subHeadEl);
                     });
                 }
@@ -214,7 +229,8 @@ tocList.appendChild(tocItem);
                     const htmlChunk = textNodes.map(a => a.html).join(' ');
                     
                     if (htmlChunk && htmlChunk.trim() !== '') {
-                        parserDiv.innerHTML = htmlChunk;
+                        // &nbsp; -> обычный пробел, чтобы не мешал переносам строк в PDF
+                        parserDiv.innerHTML = htmlChunk.replace(/&nbsp;/gi, ' ');
                         
                         const allEls = parserDiv.querySelectorAll('*');
                         allEls.forEach(el => {
